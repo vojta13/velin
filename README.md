@@ -82,4 +82,4 @@ The stats gathering is done every 10s and healthcheck is done every 2s (I plan t
 
 Copyright © 2017
 
-Distributed under the Eclipse Public License either version 1.0.
+Distributed under the Eclipse Public License version 1.0.
