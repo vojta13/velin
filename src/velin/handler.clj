@@ -32,13 +32,11 @@
 
 (defn query-for-jmx
   [server stat]
-
   {:id    (velin.utils/get-stats-id server stat)
    :value ((:transform-function stat) (get
                                         (jmx/mbean (:bean-name stat))
                                         (:value-name stat)))
    }
-
   )
 
 (defn get-data-for-app
