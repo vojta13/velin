@@ -1,0 +1,26 @@
+.panel {
+    margin-bottom: 2px;
+
+}
+
+.panel-body {
+    padding: 5px;
+}
+
+.panel-heading {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.progress {
+    margin-bottom: 3px;
+}
+
+.row {
+    padding-left: 15px
+}
+
+.col-xs-2 {
+    padding-left: 2px;
+    padding-right: 0px;
+}
