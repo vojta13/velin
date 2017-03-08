@@ -31,7 +31,7 @@ Definition file is where you specify servers, environments, statistics, and appl
 
 (defrecord Application [id name statistics instances health-check-path])
 
-(defrecord Server [host port jmx-port environment])
+(defrecord Server [host port jmx-port environment jmx-username jmx-password])
 
 (defrecord Environment [name ])
 
@@ -46,12 +46,12 @@ And example how you may define your environment is the following. The only manda
 (def prod-b (velin.utils/->Environment "PROD-B"))
 
 ;Server is more like and application server running as you can see it is defined by host and port so one machine can have multiple servers on multiple ports
-(def server-abc (velin.utils/->Server "server-host-1" 80 1234 prod-a))
-(def server-def (velin.utils/->Server "server-host-2" 8090 1235 prod-a))
-(def server-dgh (velin.utils/->Server "server-host-23" 8098 1235 prod-b))
+(def server-abc (velin.utils/->Server "server-host-1" 80 1234 prod-a nil nil))
+(def server-def (velin.utils/->Server "server-host-2" 8090 1235 prod-a nil nil))
+(def server-dgh (velin.utils/->Server "server-host-23" 8098 1235 prod-b "username" "password"))
 
-(def number-of-request (velin.utils/->Statistics "nr" "Number of requests" "foo" "value" 0 100 identity))
-(def testing-stat (velin.utils/->Statistics "pv" "Number of something else" "foo" "value" 0 100 identity))
+(def number-of-request (velin.utils/->Statistics "nr" "Number of requests" "foo" :value 0 100 identity))
+(def testing-stat (velin.utils/->Statistics "pv" "Number of something else" "foo" :MaxThresholdOfSomething 0 100 identity))
 
 ;Application has set of statistics and set of servers where it runs. There is an assumption that an app exposes same statistics across environments.
 (def my-awesome-app (velin.utils/->Application "ap1" "AwesomeApp" [number-of-request testing-stat] [server-abc server-def server-dgh] "/"))
