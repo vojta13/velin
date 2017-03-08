@@ -14,7 +14,8 @@
             [clojurewerkz.quartzite.triggers :as t]
             [clojurewerkz.quartzite.jobs :as j]
             [clojurewerkz.quartzite.jobs :refer [defjob]]
-            [clojurewerkz.quartzite.schedule.cron :refer [schedule cron-schedule]]))
+            [clojurewerkz.quartzite.schedule.cron :refer [schedule cron-schedule]])
+  (:import (java.time LocalDateTime)))
 
 (def health {})
 (def stats {})
@@ -23,7 +24,8 @@
   (load-file (System/getProperty "definitionFile"))
   )
 
-(def system (get-system-definition))
+(def system {})
+
 
 
 (System/setProperty "sun.rmi.transport.tcp.responseTimeout", "4000")
@@ -39,6 +41,16 @@
    }
   )
 
+(defn get-jmx-connection-map
+  [server]
+  (let [base-map {:host (:host server), :port (:jmx-port server)}]
+    (if (:jmx-username server)
+      (conj base-map {:environment {"jmx.remote.credentials" (into-array String [(:jmx-username server) (:jmx-password server)])}})
+      base-map
+      )
+    )
+  )
+
 (defn get-data-for-app
   [app]
   (let [instances (:instances app)
@@ -46,7 +58,7 @@
     (flatten (pmap
                (fn [server]
                  (try
-                   (jmx/with-connection {:host (:host server), :port (:port server)}
+                   (jmx/with-connection (get-jmx-connection-map server)
                                         (doall (pmap
                                                  (fn [stat] (query-for-jmx server stat))
                                                  stats)
@@ -96,8 +108,61 @@
     )
   )
 
+(defjob HealthCheck
+        [ctx]
+        (println "Checking health")
+        (def health {:last_update (.toString (LocalDateTime/now)) :data (get-health)})
+        )
+
+(defjob StatsCheck
+        [ctx]
+        (println "Getting stats")
+        (def stats {:last_update (.toString (LocalDateTime/now)) :data (get-data)})
+        )
+
+(def scheduled false)
+
+(defn start-schedule
+  []
+  (if-not scheduled
+    (let [s (-> (qs/initialize) qs/start)
+          job-health (j/build
+                       (j/of-type HealthCheck)
+                       (j/with-identity (j/key "jobs.health.1")))
+          job-stats (j/build
+                      (j/of-type StatsCheck)
+                      (j/with-identity (j/key "jobs.stats.1")))
+          tk-health (t/key "healthTrigger")
+          tk-stats (t/key "statsTrigger")
+          trigger-health (t/build
+                           (t/with-identity tk-health)
+                           (t/start-now)
+                           (t/with-schedule (schedule
+                                              (cron-schedule "*/2 * * * * ?"))))
+          trigger-stats (t/build
+                          (t/with-identity tk-stats)
+                          (t/start-now)
+                          (t/with-schedule (schedule
+                                             (cron-schedule "*/10 * * * * ?"))))]
+      ;(if-not (qs/get-job s tk-health)
+      (qs/schedule s job-health trigger-health)
+      ;)
+      ;(if-not (qs/get-job s tk-stats)
+      (qs/schedule s job-stats trigger-stats)
+      ;)
+      (def scheduled true)
+      )
+    )
+  )
+
 (defroutes app-routes
-           (GET "/apps" [] (list-apps (:apps system) (:env-groups system)))
+           (GET "/apps" []
+             (load-file (System/getProperty "definitionFile"))
+             (let [fresh-system (get-system-definition)]
+               (def system fresh-system)
+               (start-schedule)
+               (list-apps (:apps fresh-system) (:env-groups fresh-system)))
+             )
            (GET "/stats" [] (json/write-str stats))
            (GET "/health" [] (json/write-str health))
            (route/resources "/static")
@@ -106,40 +171,5 @@
 (def app
   (wrap-defaults app-routes site-defaults))
 
-(defjob HealthCheck
-        [ctx]
-        (println "Checking health")
-        (def health (get-health)))
-
-(defjob StatsCheck
-        [ctx]
-        (println "Getting stats ")
-        (def stats (get-data)))
 
 
-(let [s (-> (qs/initialize) qs/start)
-      job-health (j/build
-                   (j/of-type HealthCheck)
-                   (j/with-identity (j/key "jobs.health.1")))
-      job-stats (j/build
-                  (j/of-type StatsCheck)
-                  (j/with-identity (j/key "jobs.stats.1")))
-      tk-health (t/key "healthTrigger")
-      tk-stats (t/key "statsTrigger")
-      trigger-health (t/build
-                       (t/with-identity tk-health)
-                       (t/start-now)
-                       (t/with-schedule (schedule
-                                          (cron-schedule "*/2 * * * * ?"))))
-      trigger-stats (t/build
-                      (t/with-identity tk-stats)
-                      (t/start-now)
-                      (t/with-schedule (schedule
-                                         (cron-schedule "*/10 * * * * ?"))))]
-  ;(if-not (qs/get-job s tk-health)
-  (qs/schedule s job-health trigger-health)
-  ;)
-  ;(if-not (qs/get-job s tk-stats)
-  (qs/schedule s job-stats trigger-stats)
-  ;)
-  )

@@ -5,7 +5,7 @@
 
 (defrecord Application [id name statistics instances health-check-path])
 
-(defrecord Server [host port jmx-port environment])
+(defrecord Server [host port jmx-port environment jmx-username jmx-password])
 
 (defrecord Environment [name ])
 

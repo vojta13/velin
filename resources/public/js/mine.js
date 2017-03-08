@@ -3,7 +3,7 @@ function updateStats(){
       url: "stats",
     }).done(function(response) {
       response = JSON.parse(response);
-      $.each(response, function (idx, item){
+      $.each(response.data, function (idx, item){
         var element =  $("#"+item.id);
         var width =  Math.min(item.value / element.attr("aria-valuemax") * 100, 100);
 
@@ -27,7 +27,7 @@ function updateHealth(){
       url: "health",
     }).done(function(response) {
       response = JSON.parse(response);
-      $.each(response, function (idx, item){
+      $.each(response.data, function (idx, item){
         var element =  $("#"+item.id);
         var health =  item.value;
         element.attr("class","");
