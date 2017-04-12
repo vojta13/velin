@@ -70,7 +70,6 @@
                                    })
                        stats)
                      ))
-
                  )
                instances))
     ))
@@ -104,9 +103,13 @@
         (fn [server] {:id (velin.utils/get-health-id server app) :value (check-healthyness server app)})
         (:instances app))
       )
-    (:apps system)
-    )
+    ;Not using the ones that have nil as healtch check
+    (filter
+      #(not (nil? (:health-check-path %)))
+      (:apps system)
+      )
   )
+)
 
 (defjob HealthCheck
         [ctx]
