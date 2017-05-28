@@ -26,7 +26,7 @@
 
 (def system {})
 
-
+(def NON_EXISTING_JMX_VALUE -1)
 
 (System/setProperty "sun.rmi.transport.tcp.responseTimeout", "4000")
 (System/setProperty "sun.rmi.transport.connectionTimeout", "4000")
@@ -34,11 +34,23 @@
 
 (defn query-for-jmx
   [server stat]
-  {:id    (velin.utils/get-stats-id server stat)
-   :value ((:transform-function stat) (get
-                                        (jmx/mbean (:bean-name stat))
-                                        (:value-name stat)))
-   }
+  (let [jmx-value
+        (try
+          (get
+            (jmx/mbean (:bean-name stat))
+            (:value-name stat))
+          (catch Exception e
+            ;when the bean that I am looking for is non existing
+            NON_EXISTING_JMX_VALUE
+            )
+          )
+        ]
+
+    {:id    (velin.utils/get-stats-id server stat)
+     :type (:type stat)
+     :value ((:transform-function stat) jmx-value)
+     }
+    )
   )
 
 (defn get-jmx-connection-map
@@ -59,14 +71,16 @@
                (fn [server]
                  (try
                    (jmx/with-connection (get-jmx-connection-map server)
-                                        (doall (pmap
-                                                 (fn [stat] (query-for-jmx server stat))
-                                                 stats)
-                                               ))
+                                        (doall
+                                          (pmap
+                                            (fn [stat] (query-for-jmx server stat))
+                                            stats)
+                                          ))
                    (catch Exception e
                      (map
                        (fn [stat] {:id    (velin.utils/get-stats-id server stat)
-                                   :value -1
+                                   :type (:type stat)
+                                   :value NON_EXISTING_JMX_VALUE
                                    })
                        stats)
                      ))
@@ -108,8 +122,8 @@
       #(not (nil? (:health-check-path %)))
       (:apps system)
       )
+    )
   )
-)
 
 (defjob HealthCheck
         [ctx]

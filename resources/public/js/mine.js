@@ -5,6 +5,17 @@ function updateStats(){
       response = JSON.parse(response);
       $.each(response.data, function (idx, item){
         var element =  $("#"+item.id);
+        var type = item.type;
+        if (type === "number"){
+            setNumberType(item, element);
+        } else if( type === "boolean"){
+            setBooleanType(item, element);
+        }
+      });
+    });
+}
+
+function setNumberType(item, element){
         var widthPercentage =  Math.min(item.value / element.attr("aria-valuemax") * 100, 100);
 
         element.css("width", widthPercentage + "%")
@@ -21,10 +32,23 @@ function updateStats(){
         } else {
             element.attr("class","progress-bar progress-bar-success")
         }
-
-      });
-    });
 }
+
+function setBooleanType(item, element){
+        element.css("width", "100%")
+        element.attr("class","");
+        if(item.value === true){
+            element.attr("class","progress-bar progress-bar-success")
+            element.text("OK")
+        } else if(item.value === false) {
+            element.attr("class","progress-bar progress-bar-danger")
+            element.text("DANGER")
+        } else {
+            element.attr("class","progress-bar progress-bar-danger")
+            element.text("N/A")
+        }
+}
+
 
 function updateHealth(){
     $.ajax({

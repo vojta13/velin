@@ -1,7 +1,7 @@
 (ns velin.utils)
 
 
-(defrecord Statistics [id name bean-name value-name min-value max-value transform-function])
+(defrecord Statistics [id name type bean-name value-name min-value max-value transform-function])
 
 (defrecord Application [id name statistics instances health-check-path])
 
