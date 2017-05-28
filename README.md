@@ -27,10 +27,13 @@ This will run server at the port 3000. The URL for the apps is server:3000/apps
 Definition file is where you specify servers, environments, statistics, and applications. The logic how these related to each other can be observed from the definition:
 ```
 (ns velin.utils)
-(defrecord Statistics [id name bean-name value-name min-value max-value transform-function])
+;type can be :number or :boolean. In that case the transform function is expected to return a number of a boolean respectively
+(defrecord Statistics [id name type bean-name value-name min-value max-value transform-function])
 
+;health-check-path can be nil in that case it will not be checked
 (defrecord Application [id name statistics instances health-check-path])
 
+;if there is no username/password then you can specify nil for both
 (defrecord Server [host port jmx-port environment jmx-username jmx-password])
 
 (defrecord Environment [name ])
@@ -50,8 +53,8 @@ And example how you may define your environment is the following. The only manda
 (def server-def (velin.utils/->Server "server-host-2" 8090 1235 prod-a nil nil))
 (def server-dgh (velin.utils/->Server "server-host-23" 8098 1235 prod-b "username" "password"))
 
-(def number-of-request (velin.utils/->Statistics "nr" "Number of requests" "foo" :value 0 100 identity))
-(def testing-stat (velin.utils/->Statistics "pv" "Number of something else" "foo" :MaxThresholdOfSomething 0 100 identity))
+(def number-of-request (velin.utils/->Statistics "nr" :number "Number of requests" "foo" :value 0 100 identity))
+(def testing-stat (velin.utils/->Statistics "pv" :number "Number of something else" "foo" :MaxThresholdOfSomething 0 100 identity))
 
 ;Application has set of statistics and set of servers where it runs. There is an assumption that an app exposes same statistics across environments.
 (def my-awesome-app (velin.utils/->Application "ap1" "AwesomeApp" [number-of-request testing-stat] [server-abc server-def server-dgh] "/"))
