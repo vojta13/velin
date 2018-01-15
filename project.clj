@@ -1,4 +1,4 @@
-(defproject velin "0.0.3"
+(defproject velin "0.0.4"
   :description "FIXME: write description"
   :url ""
   :license {:name "Eclipse Public License"

@@ -41,14 +41,20 @@
             (:value-name stat))
           (catch Exception e
             ;when the bean that I am looking for is non existing
-            NON_EXISTING_JMX_VALUE
+            (do
+              (println "Exception during querying mbean " (:bean-name stat) " on server " server)
+              NON_EXISTING_JMX_VALUE
+              )
             )
           )
         ]
 
     {:id    (velin.utils/get-stats-id server stat)
-     :type (:type stat)
-     :value ((:transform-function stat) jmx-value)
+     :type  (:type stat)
+     :value (try
+              ((:transform-function stat) jmx-value)
+              (catch Exception e NON_EXISTING_JMX_VALUE))
+
      }
     )
   )
@@ -77,13 +83,15 @@
                                             stats)
                                           ))
                    (catch Exception e
-                     (map
-                       (fn [stat] {:id    (velin.utils/get-stats-id server stat)
-                                   :type (:type stat)
-                                   :value NON_EXISTING_JMX_VALUE
-                                   })
-                       stats)
-                     ))
+                     (do
+                       (println "Exception during querying a server " server)
+                       (map
+                         (fn [stat] {:id    (velin.utils/get-stats-id server stat)
+                                     :type  (:type stat)
+                                     :value NON_EXISTING_JMX_VALUE
+                                     })
+                         stats)
+                       )))
                  )
                instances))
     ))
